@@ -1,22 +1,5 @@
 package com.geccocrawler.gecco;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
 import com.alibaba.fastjson.JSON;
 import com.geccocrawler.gecco.downloader.proxy.FileProxys;
 import com.geccocrawler.gecco.downloader.proxy.Proxys;
@@ -36,6 +19,23 @@ import com.geccocrawler.gecco.spider.Spider;
 import com.geccocrawler.gecco.spider.SpiderBeanFactory;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * 爬虫引擎，每个爬虫引擎最好独立进程，在分布式爬虫场景下，可以单独分配一台爬虫服务器。引擎包括Scheduler、Downloader、Spider、 SpiderBeanFactory4个主要模块
@@ -49,7 +49,7 @@ public class GeccoEngine<V> extends Thread implements Callable<V> {
 
 	private Date startTime;
 
-	private List<HttpRequest> startRequests = new ArrayList<HttpRequest>();
+	private ConcurrentLinkedQueue<HttpRequest> startRequests = new ConcurrentLinkedQueue<>();
 
 	private Scheduler scheduler;
 
@@ -283,10 +283,10 @@ public class GeccoEngine<V> extends Thread implements Callable<V> {
 		startsJson();
 		if (startRequests.isEmpty()) {
 			// startRequests不为空
-			// throw new IllegalArgumentException("startRequests cannot be empty");
+			 throw new IllegalArgumentException("startRequests cannot be empty");
 		}
-		for (HttpRequest startRequest : startRequests) {
-			scheduler.into(startRequest);
+		while(!startRequests.isEmpty()){
+			scheduler.into(startRequests.poll());
 		}
 		spiders = new ArrayList<Spider>(threadCount);
 		for (int i = 0; i < threadCount; i++) {
@@ -349,7 +349,7 @@ public class GeccoEngine<V> extends Thread implements Callable<V> {
 		return startTime;
 	}
 
-	public List<HttpRequest> getStartRequests() {
+	public ConcurrentLinkedQueue<HttpRequest> getStartRequests() {
 		return startRequests;
 	}
 
@@ -406,16 +406,16 @@ public class GeccoEngine<V> extends Thread implements Callable<V> {
 			} catch (InterruptedException e) {
 				log.error(e);
 			}
-			if (spiderBeanFactory != null) {
-				spiderBeanFactory.getDownloaderFactory().closeAll();
-			}
-			GeccoJmx.unexport();
-			log.info("close gecco!");
+//			if (spiderBeanFactory != null) {
+//				spiderBeanFactory.getDownloaderFactory().closeAll();
+//			}
+//			GeccoJmx.unexport();
+			log.info("complete gecco!");
 		}
 
-		if (eventListener != null) {
-			eventListener.onStop(this);
-		}
+//		if (eventListener != null) {
+//			eventListener.onStop(this);
+//		}
 	}
 
 	/**

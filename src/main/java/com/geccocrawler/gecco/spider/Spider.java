@@ -1,23 +1,23 @@
 package com.geccocrawler.gecco.spider;
 
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import com.geccocrawler.gecco.GeccoEngine;
 import com.geccocrawler.gecco.downloader.AfterDownload;
 import com.geccocrawler.gecco.downloader.BeforeDownload;
-import com.geccocrawler.gecco.downloader.Downloader;
 import com.geccocrawler.gecco.downloader.DownloadException;
 import com.geccocrawler.gecco.downloader.DownloadTimeoutException;
+import com.geccocrawler.gecco.downloader.Downloader;
 import com.geccocrawler.gecco.pipeline.Pipeline;
 import com.geccocrawler.gecco.request.HttpRequest;
 import com.geccocrawler.gecco.response.HttpResponse;
 import com.geccocrawler.gecco.scheduler.Scheduler;
 import com.geccocrawler.gecco.scheduler.UniqueSpiderScheduler;
 import com.geccocrawler.gecco.spider.render.Render;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * 一个爬虫引擎可以包含多个爬虫，每个爬虫可以认为是一个单独线程，爬虫会从Scheduler中获取需要待抓取的请求。
@@ -172,10 +172,10 @@ public class Spider implements Runnable {
 			return ;
 		}
 		List<Pipeline> pipelines = context.getPipelines();
-		if(pipelines != null) {
-			for(Pipeline pipeline : pipelines) {
-				pipeline.process(spiderBean);
-			}
+		LinkedList<Pipeline> list = new LinkedList<>(pipelines);
+		while (!list.isEmpty()){
+			Pipeline pipeline = list.pop();
+			pipeline.process(spiderBean);
 		}
 	}
 	
